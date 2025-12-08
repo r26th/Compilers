@@ -83,10 +83,17 @@ new_goto = {}
 # ACTION
 for (st, sym), act in old_action.items():
     ns = mapping[st]
+
+    new_act = act
+    if act.startswith("s"):          
+        old_target = int(act[1:])      
+        new_target = mapping[old_target]   
+        new_act = "s" + str(new_target)   
+
     if (ns, sym) not in new_action:
-        new_action[(ns, sym)] = act
+        new_action[(ns, sym)] = new_act
     else:
-        if new_action[(ns, sym)] != act:
+        if new_action[(ns, sym)] != new_act:
             print("\n=== CONFLICT DETECTED ===")
             print(f"Conflict at state {ns} on symbol {sym}")
             print("Grammar is NOT LALR.")
