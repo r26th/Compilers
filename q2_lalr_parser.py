@@ -78,10 +78,22 @@ tokens.append("$")  # end marker
 # ----------------------------
 # 4) Parsing loop
 # ----------------------------
+
+def format_stack(stk):
+    return "[" + ", ".join(str(s) for s in stk) + "]"
+
+def print_row(stack, tokens, pointer, action, output):
+    stack_str = format_stack(stack)
+    input_str = " ".join(tokens[pointer:])
+    # تنسيق أعمدة ثابتة العرض
+    print(f"{stack_str:<18} | {input_str:<20} | {action:<10} | {output}")
+
 stack = [0]
 pointer = 0
 
 print("\n=== Parsing Trace (Stack | Input | Action | Output) ===")
+print(f"{'Stack':<18} | {'Input':<20} | {'Action':<10} | Output")
+print("-" * 70)
 
 while True:
     state = stack[-1]
@@ -89,52 +101,57 @@ while True:
 
     action = ACTION.get((state, look))
 
-
     if action is None:
-        print("=> ERROR: No valid action. String rejected.")
+        print_row(stack, tokens, pointer, "ERROR", "No valid action")
+        print("=> ERROR: String rejected.")
         break
 
+    # -------- SHIFT --------
     if action.startswith("shift"):
-        print(f"{stack} | {' '.join(tokens[pointer:])} | {action} | -")
-        # Extract next state number: shift5 → 5
+        # مثال: shift5 → 5
         next_state = int(action[5:])
+        print_row(stack, tokens, pointer, action, "-")
         stack.append(next_state)
         pointer += 1
 
+    # -------- REDUCE --------
     elif action.startswith("reduce"):
-     prod_num = int(action[6:])
+        prod_num = int(action[6:])      # reduce3 → 3
 
-    # get rule automatically instead of asking user
-     rule = RULES[prod_num] 
-    
-    # Split head and RHS
-     head, rhs = rule.split("->")
-     head = head.strip()
-     rhs = rhs.strip()
+        # نجيب القاعدة من RULES
+        rule = RULES[prod_num]          # مثلاً: "L -> id"
+        head, rhs = rule.split("->")
+        head = head.strip()
+        rhs = rhs.strip()
 
-    # Count RHS symbols = pop_count
-     rhs_symbols = rhs.split()
-     pop_count = len(rhs_symbols)
+        rhs_symbols = rhs.split() if rhs else []
+        pop_count = len(rhs_symbols)
 
-    # printing
-     output_msg = f"{head} → {rhs}"
-     print(f"{stack} | {' '.join(tokens[pointer:])} | reduce{prod_num} | {output_msg}")
+        output_msg = f"{head} -> {rhs if rhs else 'ε'}"
+        print_row(stack, tokens, pointer, f"reduce{prod_num}", output_msg)
 
-    # pop
-     for _ in range(pop_count):
-        stack.pop()
+        # pop عدد رموز RHS
+        for _ in range(pop_count):
+            if len(stack) > 1:
+                stack.pop()
 
-    # 
-     top = stack[-1]
-     goto_state = GOTO.get((top, head))
+        top = stack[-1]
+        goto_state = GOTO.get((top, head))
+        if goto_state is None:
+            print_row(stack, tokens, pointer, "ERROR", f"Missing GOTO({top}, {head})")
+            print("=> ERROR: String rejected.")
+            break
 
-     if goto_state is None:
-        print("=> ERROR: Missing GOTO. Rejected.")
+        stack.append(goto_state)
+
+    # -------- ACCEPT --------
+    elif action == "accept":
+        print_row(stack, tokens, pointer, "accept", "ACCEPT")
+        print("=> ACCEPTED ✓")
         break
 
-     stack.append(goto_state)
-
-    elif action == "accept":
-      print(f"{stack} | {' '.join(tokens[pointer:])} | accept | ACCEPT")
-      print("=> ACCEPTED ✓")
-      break
+    # -------- UNKNOWN --------
+    else:
+        print_row(stack, tokens, pointer, action, "Unknown action")
+        print("=> ERROR: String rejected.")
+        break

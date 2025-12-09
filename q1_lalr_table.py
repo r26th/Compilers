@@ -17,7 +17,7 @@ num_states = int(input("Enter number of LR(1) states: "))
 lr_states = {}
 for i in range(num_states):
     print(f"\nState {i}:")
-    core = input("Enter LR(0) core (example: E->E+T , T->F ): ")
+    core = input("Enter LR(1) core (example: E->E+T , T->F ): ")
     lr_states[i] = core.strip()
 
 # ----------------------------
@@ -44,7 +44,7 @@ for core, group in merged.items():
 # ----------------------------
 print("\nEnter LR ACTION table.")
 print("Format: state symbol action")
-print("Example: 0 id shift3")
+print("Example: 0 id s3")
 print("Type 'done' to finish.")
 
 old_action = {}
@@ -90,14 +90,43 @@ for (st, sym), act in old_action.items():
         new_target = mapping[old_target]   
         new_act = "s" + str(new_target)   
 
-    if (ns, sym) not in new_action:
-        new_action[(ns, sym)] = new_act
+# ACTION
+for (st, sym), act in old_action.items():
+    ns = mapping[st]
+
+    new_act = act
+    if act.startswith("s"):
+        old_target = int(act[1:])
+        new_target = mapping[old_target]
+        new_act = "s" + str(new_target)
+
+    key = (ns, sym)
+
+    if key not in new_action:
+        new_action[key] = new_act
     else:
-        if new_action[(ns, sym)] != new_act:
+        existing = new_action[key]
+        if existing != new_act:
+
+            if existing.startswith("s") and new_act.startswith("s"):
+                ctype = "Shift/Shift conflict"
+            elif existing.startswith("r") and new_act.startswith("r"):
+                ctype = "Reduce/Reduce conflict"
+            elif existing.startswith("s") and new_act.startswith("r"):
+                ctype = "Shift/Reduce conflict"
+            elif existing.startswith("r") and new_act.startswith("s"):
+                ctype = "Reduce/Shift conflict"
+            else:
+                ctype = "Unknown conflict"
+
             print("\n=== CONFLICT DETECTED ===")
-            print(f"Conflict at state {ns} on symbol {sym}")
-            print("Grammar is NOT LALR.")
+            print(f"Type: {ctype}")
+            print(f"At LALR state {ns} on symbol '{sym}'")
+            print(f"Existing action : {existing}")
+            print(f"New action      : {new_act}")
+            print("\n   Grammar is NOT LALR.")
             exit()
+
 
 # GOTO
 for (st, sym), to in old_goto.items():
