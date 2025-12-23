@@ -17,7 +17,7 @@ num_states = int(input("Enter number of LR(1) states: "))
 lr_states = {}
 for i in range(num_states):
     print(f"\nState {i}:")
-    core = input("Enter LR(1) core (example: E->E+T , T->F ): ")
+    core = input("Enter LR(0) core (example: E->E+T , T->F ): ")
     lr_states[i] = core.strip()
 
 # ----------------------------
